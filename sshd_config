@@ -1,0 +1,12 @@
+Port 2222
+HostKey /home/glider/.ssh/ssh_host_ed25519_key
+HostKey /home/glider/.ssh/ssh_host_rsa_key
+AuthorizedKeysFile /home/glider/.ssh/authorized_keys
+PasswordAuthentication no
+PubkeyAuthentication yes
+UsePAM no
+StrictModes no
+AllowUsers glider
+PrintMotd no
+Subsystem sftp /usr/lib/openssh/sftp-server
+LogLevel DEBUG3

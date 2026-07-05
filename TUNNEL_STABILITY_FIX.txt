@@ -1,0 +1,59 @@
+TUNNEL STABILITY FIX
+====================
+
+PROBLEM
+-------
+The reverse tunnel drops every ~20-30 minutes because Windows sshd stops
+responding to keepalives, causing your SSH session to die with it.
+
+The tunnel auto-reconnects in 5 seconds, but any active SSH session is lost.
+
+
+FIX 1 — Make Windows sshd keep connections alive (run once on Windows WSL)
+---------------------------------------------------------------------------
+sudo bash -c 'echo "ClientAliveInterval 30
+ClientAliveCountMax 20" >> /etc/ssh/sshd_config'
+sudo service ssh restart
+
+This makes Windows send a keepalive every 30 seconds. With CountMax=20,
+the connection survives up to 10 minutes of Tailscale hiccups before dropping.
+
+
+FIX 2 — Always use tmux so sessions survive reconnects
+-------------------------------------------------------
+After connecting to HPC, immediately start a tmux session:
+
+  First time:
+    tmux new -s work
+
+  If session already exists:
+    tmux attach -t work
+
+When the tunnel drops and comes back, your tmux session stays alive on the HPC.
+Just reconnect and reattach:
+
+  bash ~/hpc-connect.sh
+  tmux attach -t work
+
+You resume exactly where you left off. Training jobs, terminals, everything intact.
+
+
+USEFUL TMUX SHORTCUTS
+---------------------
+  Ctrl+B, D       Detach from session (leaves it running)
+  Ctrl+B, C       New window
+  Ctrl+B, N       Next window
+  Ctrl+B, [       Scroll mode (q to exit)
+  tmux ls         List all sessions
+  tmux attach -t work   Reattach to session named "work"
+
+
+RECONNECT AFTER TUNNEL DROP
+----------------------------
+On Windows WSL:
+  bash ~/hpc-connect.sh
+  tmux attach -t work
+
+Check tunnel health from HPC:
+  cat ~/.tailscale/tunnel.log | tail -10
+  ps aux | grep "ssh.*unix@100" | grep -v grep
