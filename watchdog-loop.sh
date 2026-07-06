@@ -9,6 +9,8 @@ LOG=/home/glider/.tailscale/watchdog.log
 
 echo "$(date) watchdog started (PID $$)" >> "$LOG"
 
+PROBE_FAILS=0
+
 while true; do
   sleep 60
 
@@ -44,6 +46,8 @@ while true; do
   # while still looking alive for up to 5 min (keepalive 60x5). Probe the SSH
   # banner through Windows:2200 on a fresh connection; if it doesn't answer,
   # kill the tunnel ssh so the loop reconnects with pre-flight cleanup.
+  # If 3 probes in a row fail, the problem is tailscaled's data plane
+  # (streams stall instantly even on fresh sessions) — restart tailscaled.
   TUNNEL_PID=$(pgrep -f "ssh .*-R 2200:localhost:2222" | head -1)
   if [ -n "$TUNNEL_PID" ]; then
     AGE=$(ps -o etimes= -p "$TUNNEL_PID" 2>/dev/null | tr -d ' ')
@@ -53,8 +57,24 @@ while true; do
           unix@100.76.251.19 \
           'timeout 5 bash -c "read -r b < /dev/tcp/localhost/2200; echo \$b" 2>/dev/null | grep -q SSH' \
           > /dev/null 2>&1; then
-        echo "$(date) tunnel probe failed (stalled stream) — killing tunnel ssh $TUNNEL_PID" >> "$LOG"
+        PROBE_FAILS=$((PROBE_FAILS + 1))
+        if [ "$PROBE_FAILS" -ge 3 ]; then
+          echo "$(date) probe failed ${PROBE_FAILS}x — tailscaled data plane frozen, restarting tailscaled" >> "$LOG"
+          pkill -9 -f "tools/tailscale/tailscaled" 2>/dev/null
+          sleep 3
+          rm -f "$SK"
+          nohup "$TAILSCALED" --tun=userspace-networking \
+            --state=/home/glider/.tailscale/state \
+            --socket="$SK" \
+            >> /home/glider/.tailscale/tailscaled.log 2>&1 &
+          sleep 8
+          PROBE_FAILS=0
+        else
+          echo "$(date) tunnel probe failed (${PROBE_FAILS}/3) — killing tunnel ssh $TUNNEL_PID" >> "$LOG"
+        fi
         kill -9 "$TUNNEL_PID" 2>/dev/null
+      else
+        PROBE_FAILS=0
       fi
     fi
   fi
