@@ -1,9 +1,10 @@
 #!/bin/bash
 # Reverse SSH tunnel: Windows:2200 → HPC:localhost:2222 (sshd)
-# Connect from Windows with: bash ~/hpc-connect.sh  (ssh -p 2200 glider@localhost)
+# Connect from Windows with: bash ~/hpc-connect-s1.sh  (ssh -p 2200 glider@localhost)
 #
 # Self-healing loop:
-#   1. Pre-flight: kill stale unix sshd-sessions on Windows so port 2200 is free
+#   1. Pre-flight: kill only the sshd-session holding port 2200 on Windows
+#      (targeted kill — safe for multi-node: does NOT touch other nodes' ports)
 #   2. Run the tunnel with ExitOnForwardFailure=yes — if the bind fails or the
 #      transport dies, ssh exits and the loop retries after 10s
 
@@ -20,17 +21,11 @@ SSH_OPTS=(
 echo "$(date) tunnel loop starting (PID $$)" >> "$LOG"
 
 while true; do
-  # Pre-flight: on Windows, kill every unix sshd-session that is not an
-  # ancestor of this cleanup command's own session (frees stale port 2200)
+  # Pre-flight: kill only the sshd-session holding port 2200 on Windows
   ssh "${SSH_OPTS[@]}" "$WIN" '
-    own=$$; keep="";
-    while [ "$own" != 1 ] && [ -r /proc/$own/stat ]; do
-      keep="$keep $own"
-      own=$(awk "{print \$4}" /proc/$own/stat)
-    done
-    for p in $(pgrep -u unix sshd-session); do
-      echo "$keep" | grep -qw "$p" || kill "$p" 2>/dev/null
-    done' >> "$LOG" 2>&1
+    pid=$(ss -tlnp sport = ":2200" 2>/dev/null | grep -oP "pid=\K[0-9]+" | head -1)
+    [ -n "$pid" ] && kill "$pid" 2>/dev/null
+  ' >> "$LOG" 2>&1
 
   ssh "${SSH_OPTS[@]}" -N \
     -o ExitOnForwardFailure=yes \

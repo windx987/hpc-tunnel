@@ -169,7 +169,7 @@ if [ ! -d ~/hpc-tunnel ]; then
   git clone https://github.com/windx987/hpc-tunnel.git ~/hpc-tunnel
 fi
 
-sed "s/-R 2200:localhost:2222/-R ${TUNNEL_PORT}:localhost:2222/" \
+sed "s/\b2200\b/${TUNNEL_PORT}/g" \
   ~/hpc-tunnel/reverse-tunnel.sh > ~/reverse-tunnel.sh
 
 sed "s/2200:localhost:2222/${TUNNEL_PORT}:localhost:2222/g; s/\b2200\b/${TUNNEL_PORT}/g" \
