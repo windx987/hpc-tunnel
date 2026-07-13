@@ -1,6 +1,6 @@
 #!/bin/bash
 HPC_USER="glider"
-TUNNEL_PORT="2201"
+TUNNEL_PORT="2202"
 
 if ! ss -tlnp 2>/dev/null | grep -q ":${TUNNEL_PORT}"; then
   echo "Tunnel not detected on port ${TUNNEL_PORT}."

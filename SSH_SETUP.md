@@ -19,7 +19,7 @@ You (Windows WSL): ssh -p PORT glider@localhost
 | Node | Hostname | GPU | Tailscale IP | Tunnel Port | Connect |
 |---|---|---|---|---|---|
 | node-01 | c16g2-01-6cb8cf996d-9gg56 | — | 100.112.166.47 | 2200 | `bash ~/hpc-connect-s1.sh` |
-| node-02 | c16g2-02-8f7bc676c-2x56f | 2× A100-SXM4-40GB | 100.96.166.60 | 2201 | `bash ~/hpc-connect-s2.sh` |
+| node-02 | c16g2-02-8f7bc676c-2x56f | 2× A100-SXM4-40GB | 100.96.166.60 | 2202 | `bash ~/hpc-connect-s2.sh` |
 
 **Windows WSL:** `unix@100.76.251.19` (desktop-a53mumh-1)
 
@@ -67,7 +67,7 @@ bash ~/hpc-connect-s2.sh   # node-02 (2× A100)
 Or directly:
 ```bash
 ssh -p 2200 glider@localhost   # node-01
-ssh -p 2201 glider@localhost   # node-02
+ssh -p 2202 glider@localhost   # node-02
 ```
 
 ---
@@ -111,7 +111,7 @@ python train.py
 
 | Symptom | Fix |
 |---|---|
-| `Connection refused` on port 2200/2201 | Tunnel down — run `bash ~/start-services.sh` on the HPC node |
+| `Connection refused` on port 2200/2202 | Tunnel down — run `bash ~/start-services.sh` on the HPC node |
 | `remote port forwarding failed` | Stale port on Windows — self-heals automatically |
 | `Permission denied (publickey)` | HPC key not in Windows `~/.ssh/authorized_keys` |
 | Tunnel keeps dropping | Check `ClientAliveInterval 60` in Windows `/etc/ssh/sshd_config` |
