@@ -20,6 +20,7 @@ You (Windows WSL): ssh -p PORT glider@localhost
 |---|---|---|---|---|---|
 | node-01 | c16g2-01-6cb8cf996d-9gg56 | — | 100.112.166.47 | 2200 | `bash ~/hpc-connect-s1.sh` |
 | node-02 | c16g2-02-8f7bc676c-2x56f | 2× A100-SXM4-40GB | 100.96.166.60 | 2202 | `bash ~/hpc-connect-s2.sh` |
+| node-03 | c16g2-03-576fd5d65-jfzq5 | — | 100.75.231.113 | 2204 | `bash ~/hpc-connect-s3.sh` |
 
 **Windows WSL:** `unix@100.76.251.19` (desktop-a53mumh-1)
 
@@ -62,12 +63,14 @@ This starts in order:
 ```bash
 bash ~/hpc-connect-s1.sh   # node-01
 bash ~/hpc-connect-s2.sh   # node-02 (2× A100)
+bash ~/hpc-connect-s3.sh   # node-03
 ```
 
 Or directly:
 ```bash
 ssh -p 2200 glider@localhost   # node-01
 ssh -p 2202 glider@localhost   # node-02
+ssh -p 2204 glider@localhost   # node-03
 ```
 
 ---

@@ -17,6 +17,7 @@ HPC node-02 ──(outbound SSH via Tailscale)──► Windows WSL
 |---|---|---|---|---|
 | node-01 | c16g2-01-6cb8cf996d-9gg56 | — | 2200 | `hpc-connect-s1.sh` |
 | node-02 | c16g2-02-8f7bc676c-2x56f | 2× A100-SXM4-40GB | 2202 | `hpc-connect-s2.sh` |
+| node-03 | c16g2-03-576fd5d65-jfzq5 | — | 2204 | `hpc-connect-s3.sh` |
 
 ## Files
 
