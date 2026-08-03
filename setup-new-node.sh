@@ -141,9 +141,9 @@ if [ ! -x "$SSHD" ]; then
       local sshd_src; sshd_src=$(find "$tmpdir/openssh-ext" -path '*/sbin/sshd' -type f | head -1)
       [ -z "$sshd_src" ] && { echo "  ERROR: sshd not found in package"; return 1; }
       cp "$sshd_src" ~/bin/sshd && chmod +x ~/bin/sshd || return 1
-      # libwrap0
+      # libwrap0 — pin to 7.x for Ubuntu 22.04 (newer versions need GLIBC_2.38+)
       local lwpkg; lwpkg=$(curl -s "http://archive.ubuntu.com/ubuntu/pool/main/t/tcp-wrappers/" \
-        | grep -oP 'libwrap0_[^"]+amd64\.deb' | tail -1)
+        | grep -oP 'libwrap0_7\.[^"]+amd64\.deb' | tail -1)
       if [ -n "$lwpkg" ]; then
         curl -fsSL "http://archive.ubuntu.com/ubuntu/pool/main/t/tcp-wrappers/$lwpkg" -o "$tmpdir/libwrap.deb" 2>/dev/null
         dpkg -x "$tmpdir/libwrap.deb" "$tmpdir/libwrap-ext" 2>/dev/null
@@ -166,7 +166,7 @@ if ldd "$SSHD" 2>&1 | grep -q "libwrap.so.0 => not found"; then
   if [ ! -f ~/lib/libwrap.so.0 ]; then
     echo "  downloading libwrap from Ubuntu archive..."
     lwpkg=$(curl -s "http://archive.ubuntu.com/ubuntu/pool/main/t/tcp-wrappers/" \
-      | grep -oP 'libwrap0_[^"]+amd64\.deb' | tail -1)
+      | grep -oP 'libwrap0_7\.[^"]+amd64\.deb' | tail -1)
     tmpdir=$(mktemp -d)
     curl -fsSL "http://archive.ubuntu.com/ubuntu/pool/main/t/tcp-wrappers/$lwpkg" -o "$tmpdir/libwrap.deb"
     dpkg -x "$tmpdir/libwrap.deb" "$tmpdir/libwrap-ext" 2>/dev/null
