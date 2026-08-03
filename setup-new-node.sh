@@ -134,14 +134,16 @@ if [ ! -x "$SSHD" ]; then
       curl -fsSL "http://archive.ubuntu.com/ubuntu/pool/main/o/openssh/$pkg" -o "$tmpdir/openssh.deb" || return 1
       # dpkg -x handles zstd/xz/gz natively; much more reliable than ar+tar
       dpkg -x "$tmpdir/openssh.deb" "$tmpdir/openssh-ext" || return 1
-      find "$tmpdir/openssh-ext" -name sshd -exec cp {} ~/bin/sshd \; && chmod +x ~/bin/sshd || return 1
+      local sshd_src; sshd_src=$(find "$tmpdir/openssh-ext" -name sshd -type f | head -1)
+      [ -z "$sshd_src" ] && { echo "  ERROR: sshd not found in package"; return 1; }
+      cp "$sshd_src" ~/bin/sshd && chmod +x ~/bin/sshd || return 1
       # libwrap0
       local lwpkg; lwpkg=$(curl -s "http://archive.ubuntu.com/ubuntu/pool/main/t/tcp-wrappers/" \
         | grep -oP 'libwrap0_[^"]+amd64\.deb' | tail -1)
       if [ -n "$lwpkg" ]; then
         curl -fsSL "http://archive.ubuntu.com/ubuntu/pool/main/t/tcp-wrappers/$lwpkg" -o "$tmpdir/libwrap.deb" 2>/dev/null
         dpkg -x "$tmpdir/libwrap.deb" "$tmpdir/libwrap-ext" 2>/dev/null
-        find "$tmpdir/libwrap-ext" -name 'libwrap.so*' -exec cp {} ~/lib/ \;
+        find "$tmpdir/libwrap-ext" -name 'libwrap.so*' | xargs -I{} cp {} ~/lib/ 2>/dev/null || true
       fi
       rm -rf "$tmpdir"
     }
@@ -164,7 +166,7 @@ if ldd "$SSHD" 2>&1 | grep -q "libwrap.so.0 => not found"; then
     tmpdir=$(mktemp -d)
     curl -fsSL "http://archive.ubuntu.com/ubuntu/pool/main/t/tcp-wrappers/$lwpkg" -o "$tmpdir/libwrap.deb"
     dpkg -x "$tmpdir/libwrap.deb" "$tmpdir/libwrap-ext" 2>/dev/null
-    find "$tmpdir/libwrap-ext" -name 'libwrap.so*' -exec cp {} ~/lib/ \;
+    find "$tmpdir/libwrap-ext" -name 'libwrap.so*' | xargs -I{} cp {} ~/lib/ 2>/dev/null || true
     rm -rf "$tmpdir"
   fi
   export LD_LIBRARY_PATH=~/lib
