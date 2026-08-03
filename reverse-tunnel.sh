@@ -22,7 +22,8 @@ echo "$(date) tunnel loop starting (PID $$)" >> "$LOG"
 
 while true; do
   # Pre-flight: kill only the sshd-session holding port 2200 on Windows
-  ssh "${SSH_OPTS[@]}" "$WIN" '
+  # timeout 8: prevents indefinite hang on nodes where first SSH stalls
+  timeout 8 ssh "${SSH_OPTS[@]}" "$WIN" '
     pid=$(ss -tlnp sport = ":2200" 2>/dev/null | grep -oP "pid=\K[0-9]+" | head -1)
     [ -n "$pid" ] && kill "$pid" 2>/dev/null
   ' >> "$LOG" 2>&1
