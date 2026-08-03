@@ -134,7 +134,7 @@ if [ ! -x "$SSHD" ]; then
       curl -fsSL "http://archive.ubuntu.com/ubuntu/pool/main/o/openssh/$pkg" -o "$tmpdir/openssh.deb" || return 1
       # dpkg -x handles zstd/xz/gz natively; much more reliable than ar+tar
       dpkg -x "$tmpdir/openssh.deb" "$tmpdir/openssh-ext" || return 1
-      local sshd_src; sshd_src=$(find "$tmpdir/openssh-ext" -name sshd -type f | head -1)
+      local sshd_src; sshd_src=$(find "$tmpdir/openssh-ext" -path '*/sbin/sshd' -type f | head -1)
       [ -z "$sshd_src" ] && { echo "  ERROR: sshd not found in package"; return 1; }
       cp "$sshd_src" ~/bin/sshd && chmod +x ~/bin/sshd || return 1
       # libwrap0
