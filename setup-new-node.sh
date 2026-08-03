@@ -128,8 +128,12 @@ if [ ! -x "$SSHD" ]; then
     _download_sshd() {
       local tmpdir; tmpdir=$(mktemp -d)
       # openssh-server
+      # Pin to 8.9p1 for Ubuntu 22.04 (libcrypto.so.3); newer versions need libcrypto.so.4
+      local os_ver; os_ver=$(grep -oP '(?<=VERSION_ID=")[^"]+' /etc/os-release 2>/dev/null || echo "22")
+      local pkg_filter='openssh-server_[^"]+amd64\.deb'
+      [[ "$os_ver" == "22.04" ]] && pkg_filter='openssh-server_8\.9p1[^"]+amd64\.deb'
       local pkg; pkg=$(curl -s "http://archive.ubuntu.com/ubuntu/pool/main/o/openssh/" \
-        | grep -oP 'openssh-server_[^"]+amd64\.deb' | tail -1)
+        | grep -oP "$pkg_filter" | tail -1)
       [ -z "$pkg" ] && { echo "  ERROR: could not find openssh-server package"; return 1; }
       curl -fsSL "http://archive.ubuntu.com/ubuntu/pool/main/o/openssh/$pkg" -o "$tmpdir/openssh.deb" || return 1
       # dpkg -x handles zstd/xz/gz natively; much more reliable than ar+tar
