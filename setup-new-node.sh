@@ -50,8 +50,9 @@ else
     --socket="$SOCKET" \
     >> "$LOG_DIR/tailscaled.log" 2>&1 &
   sleep 6
-  if ! "$TS" --socket="$SOCKET" status > /dev/null 2>&1; then
-    echo "  ERROR: tailscaled not responding. Check $LOG_DIR/tailscaled.log"
+  # Check tailscaled is responsive (pgrep), not tailscale status (fails when not logged in)
+  if ! pgrep -f tailscaled > /dev/null 2>&1; then
+    echo "  ERROR: tailscaled not running. Check $LOG_DIR/tailscaled.log"
     exit 1
   fi
   echo "  OK"
@@ -61,6 +62,8 @@ if ! "$TS" --socket="$SOCKET" ip > /dev/null 2>&1; then
   echo ""
   echo "  Tailscale not authenticated. Open the URL below in your browser:"
   "$TS" --socket="$SOCKET" up
+  echo "  (After auth, re-run this script to continue.)"
+  exit 0
 fi
 echo "  Tailscale IP: $("$TS" --socket="$SOCKET" ip 2>/dev/null | head -1)"
 
