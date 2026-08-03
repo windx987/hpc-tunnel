@@ -132,18 +132,15 @@ if [ ! -x "$SSHD" ]; then
         | grep -oP 'openssh-server_[^"]+amd64\.deb' | tail -1)
       [ -z "$pkg" ] && { echo "  ERROR: could not find openssh-server package"; return 1; }
       curl -fsSL "http://archive.ubuntu.com/ubuntu/pool/main/o/openssh/$pkg" -o "$tmpdir/openssh.deb" || return 1
-      mkdir -p "$tmpdir/openssh-ext"
-      (cd "$tmpdir/openssh-ext" && ar x "$tmpdir/openssh.deb" \
-        && for f in data.tar.*; do tar xf "$f" ./usr/sbin/sshd 2>/dev/null && break; done)
+      # dpkg -x handles zstd/xz/gz natively; much more reliable than ar+tar
+      dpkg -x "$tmpdir/openssh.deb" "$tmpdir/openssh-ext" || return 1
       find "$tmpdir/openssh-ext" -name sshd -exec cp {} ~/bin/sshd \; && chmod +x ~/bin/sshd || return 1
       # libwrap0
       local lwpkg; lwpkg=$(curl -s "http://archive.ubuntu.com/ubuntu/pool/main/t/tcp-wrappers/" \
         | grep -oP 'libwrap0_[^"]+amd64\.deb' | tail -1)
       if [ -n "$lwpkg" ]; then
         curl -fsSL "http://archive.ubuntu.com/ubuntu/pool/main/t/tcp-wrappers/$lwpkg" -o "$tmpdir/libwrap.deb" 2>/dev/null
-        mkdir -p "$tmpdir/libwrap-ext"
-        (cd "$tmpdir/libwrap-ext" && ar x "$tmpdir/libwrap.deb" \
-          && for f in data.tar.*; do tar xf "$f" 2>/dev/null && break; done)
+        dpkg -x "$tmpdir/libwrap.deb" "$tmpdir/libwrap-ext" 2>/dev/null
         find "$tmpdir/libwrap-ext" -name 'libwrap.so*' -exec cp {} ~/lib/ \;
       fi
       rm -rf "$tmpdir"
@@ -166,8 +163,8 @@ if ldd "$SSHD" 2>&1 | grep -q "libwrap.so.0 => not found"; then
       | grep -oP 'libwrap0_[^"]+amd64\.deb' | tail -1)
     tmpdir=$(mktemp -d)
     curl -fsSL "http://archive.ubuntu.com/ubuntu/pool/main/t/tcp-wrappers/$lwpkg" -o "$tmpdir/libwrap.deb"
-    (cd "$tmpdir" && ar x libwrap.deb && for f in data.tar.*; do tar xf "$f" 2>/dev/null && break; done)
-    find "$tmpdir" -name 'libwrap.so*' -exec cp {} ~/lib/ \;
+    dpkg -x "$tmpdir/libwrap.deb" "$tmpdir/libwrap-ext" 2>/dev/null
+    find "$tmpdir/libwrap-ext" -name 'libwrap.so*' -exec cp {} ~/lib/ \;
     rm -rf "$tmpdir"
   fi
   export LD_LIBRARY_PATH=~/lib
