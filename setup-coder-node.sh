@@ -72,7 +72,22 @@ if ! command -v ssh-keygen > /dev/null 2>&1; then
   sudo apt-get install -y openssh-client > /dev/null 2>&1 || true
 fi
 if ! command -v ssh-keygen > /dev/null 2>&1; then
-  echo "  ERROR: ssh-keygen unavailable. Run: sudo apt-get install -y openssh-client"
+  echo "  apt failed — downloading ssh-keygen from Ubuntu archive..."
+  _skg_os=$(grep -oP '(?<=VERSION_ID=")[^"]+' /etc/os-release 2>/dev/null || echo "22.04")
+  _skg_filter='openssh-client_[^"]+amd64\.deb'
+  [[ "$_skg_os" == "22.04" ]] && _skg_filter='openssh-client_8\.9p1[^"]+amd64\.deb'
+  _skg_pkg=$(curl -s "http://archive.ubuntu.com/ubuntu/pool/main/o/openssh/" \
+    | grep -oP "$_skg_filter" | tail -1)
+  _skg_tmp=$(mktemp -d)
+  curl -fsSL "http://archive.ubuntu.com/ubuntu/pool/main/o/openssh/$_skg_pkg" -o "$_skg_tmp/openssh-client.deb"
+  dpkg -x "$_skg_tmp/openssh-client.deb" "$_skg_tmp/client-ext"
+  cp "$_skg_tmp/client-ext/usr/bin/ssh-keygen" "$USER_HOME/bin/"
+  chmod +x "$USER_HOME/bin/ssh-keygen"
+  export PATH="$USER_HOME/bin:$PATH"
+  rm -rf "$_skg_tmp"
+fi
+if ! command -v ssh-keygen > /dev/null 2>&1; then
+  echo "  ERROR: ssh-keygen unavailable after all attempts"
   exit 1
 fi
 if [ ! -f "$USER_HOME/.ssh/ssh_host_ed25519_key" ]; then
