@@ -66,6 +66,15 @@ echo "  Tailscale IP: $("$TS" --socket="$SOCKET" ip 2>/dev/null | head -1)"
 echo ""
 echo "=== [3/7] SSH keys ==="
 mkdir -p "$USER_HOME/.ssh"
+if ! command -v ssh-keygen > /dev/null 2>&1; then
+  echo "  ssh-keygen not found — attempting apt install openssh-client..."
+  apt-get install -y openssh-client > /dev/null 2>&1 || \
+  sudo apt-get install -y openssh-client > /dev/null 2>&1 || true
+fi
+if ! command -v ssh-keygen > /dev/null 2>&1; then
+  echo "  ERROR: ssh-keygen unavailable. Run: sudo apt-get install -y openssh-client"
+  exit 1
+fi
 if [ ! -f "$USER_HOME/.ssh/ssh_host_ed25519_key" ]; then
   ssh-keygen -t ed25519 -f "$USER_HOME/.ssh/ssh_host_ed25519_key" -N "" -q
   echo "  generated host ed25519 key"
