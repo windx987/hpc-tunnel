@@ -81,8 +81,11 @@ if ! command -v ssh-keygen > /dev/null 2>&1; then
   _skg_tmp=$(mktemp -d)
   curl -fsSL "http://archive.ubuntu.com/ubuntu/pool/main/o/openssh/$_skg_pkg" -o "$_skg_tmp/openssh-client.deb"
   dpkg -x "$_skg_tmp/openssh-client.deb" "$_skg_tmp/client-ext"
-  cp "$_skg_tmp/client-ext/usr/bin/ssh-keygen" "$USER_HOME/bin/"
-  chmod +x "$USER_HOME/bin/ssh-keygen"
+  for _bin in ssh ssh-keygen; do
+    [ -f "$_skg_tmp/client-ext/usr/bin/$_bin" ] && \
+      cp "$_skg_tmp/client-ext/usr/bin/$_bin" "$USER_HOME/bin/" && \
+      chmod +x "$USER_HOME/bin/$_bin"
+  done
   export PATH="$USER_HOME/bin:$PATH"
   rm -rf "$_skg_tmp"
 fi
@@ -215,14 +218,16 @@ cat > "$USER_HOME/reverse-tunnel.sh" << RTEOF
 LOG=$USER_HOME/.tailscale/tunnel.log
 WIN=unix@100.76.251.19
 PROXY="$USER_HOME/tools/tailscale/tailscale --socket=/tmp/tailscale.sock nc %h %p"
+# Use ~/bin/ssh if system ssh is missing
+SSH_BIN=\$(command -v ssh 2>/dev/null || echo "$USER_HOME/bin/ssh")
 SSH_OPTS=(-o StrictHostKeyChecking=no -o ConnectTimeout=15 -o "ProxyCommand=\$PROXY")
 echo "\$(date) tunnel loop starting (PID \$\$)" >> "\$LOG"
 while true; do
-  timeout 8 ssh "\${SSH_OPTS[@]}" "$WIN" "
+  timeout 8 "\$SSH_BIN" "\${SSH_OPTS[@]}" "$WIN" "
     pid=\$(ss -tlnp sport = \":${TUNNEL_PORT}\" 2>/dev/null | grep -oP 'pid=\K[0-9]+' | head -1)
     [ -n \"\$pid\" ] && kill \"\$pid\" 2>/dev/null
   " >> "\$LOG" 2>&1
-  ssh "\${SSH_OPTS[@]}" -N -o ExitOnForwardFailure=yes \
+  "\$SSH_BIN" "\${SSH_OPTS[@]}" -N -o ExitOnForwardFailure=yes \
     -o ServerAliveInterval=60 -o ServerAliveCountMax=5 -o TCPKeepAlive=yes \
     -R ${TUNNEL_PORT}:localhost:2222 "$WIN" >> "\$LOG" 2>&1
   echo "\$(date) tunnel exited, retrying in 10s" >> "\$LOG"
